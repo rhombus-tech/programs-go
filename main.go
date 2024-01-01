@@ -1,36 +1,59 @@
-package main
-
 import (
-	"context"
-	"fmt"
-
-	"github.com/ava-labs/hypersdk/x/programs/examples/imports/program"
-	"github.com/ava-labs/hypersdk/x/programs/examples/imports/pstate"
-
-	"github.com/ava-labs/hypersdk/x/programs/runtime"
+    "fmt"
+    "io/ioutil"
+    "wasmtime"
 )
 
 func main() {
-	// Get a greeting message and print it.
-	db := newTestDB()
-	var counterProgramBytes []byte
-	fmt.Println("hello world")
-	maxUnits := uint64(80000)
-	cfg, err := runtime.NewConfigBuilder().Build()
-	fmt.Println(err)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+    cfg := wasmtime.NewConfig()
+    cfg.SetConsumeFuel(true)
+    cfg.CacheConfigLoadDefault()
+    cfg.SetStrategy(wasmtime.StrategyCranelift)
+    store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(cfg))
 
-	// define supported imports
-	supported := runtime.NewSupportedImports()
-	supported.Register("state", func() runtime.Import {
-		return pstate.New(log, db)
-	})
-	supported.Register("program", func() runtime.Import {
-		return program.New(log, db, cfg)
-	})
+    err := store.AddFuel(10000000000000)
+    if err != nil {
+        fmt.Println("Failed to add fuel:", err)
+        return
+    }
 
-	rt := runtime.New(log, cfg, supported.Imports())
-	err = rt.Initialize(ctx, counterProgramBytes, maxUnits)
-	rt.Stop()
+    // Load WebAssembly binary
+    wasmBytes, err := ioutil.ReadFile("path/to/your/module.wasm")
+    if err != nil {
+        fmt.Println("Failed to read WebAssembly file:", err)
+        return
+    }
+
+    module, err := wasmtime.NewModule(store.Engine, wasmBytes)
+    if err != nil {
+        fmt.Println("Failed to compile module:", err)
+        return
+    }
+
+    // Define imports here if your module requires any
+    var imports []*wasmtime.Extern
+
+    // Create an instance of the module
+    instance, err := wasmtime.NewInstance(store, module, imports)
+    if err != nil {
+        fmt.Println("Failed to instantiate module:", err)
+        return
+    }
+
+    // Get the `run` function exported from the WebAssembly module
+    runFunc, err := instance.GetFunc("run")
+    if err != nil || runFunc == nil {
+        fmt.Println("Failed to get run function:", err)
+        return
+    }
+
+    // Call the `run` function
+    _, err = runFunc.Call()
+    if err != nil {
+        fmt.Println("Failed to call run function:", err)
+        return
+    }
+
+    // Your additional logic here...
 }
+
