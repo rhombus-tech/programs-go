@@ -1,7 +1,8 @@
 import (
     "fmt"
     "io/ioutil"
-    "wasmtime"
+
+    "github.com/bytecodealliance/wasmtime-go/v12"
 )
 
 func main() {
