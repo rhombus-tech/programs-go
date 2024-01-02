@@ -10,7 +10,7 @@ import (
 func main() {
 	// Let's assume we don't have WebAssembly bytes at hand. We
 	// will write WebAssembly manually.
-	wasmBytes := []byte(`
+	wasmBytes, err := wasmtime.Wat2Wasm(`
 	(module
 	  (type (func (param i32 i32) (result i32)))
 	  (func (type 0)
@@ -19,45 +19,40 @@ func main() {
 	    i32.add)
 	  (export "sum" (func 0)))
 `)
-
-    cfg := wasmtime.NewConfig()
-    cfg.SetConsumeFuel(true)
-	cfg.CacheConfigLoadDefault()
-	cfg.SetStrategy(wasmtime.StrategyCranelift)
-	store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(cfg))
-
-	err := store.AddFuel(10000000000000) // testing only ;)
 	if err != nil {
-		fmt.Println("Failed to add fuel:", err)
+		fmt.Println("Failed to parse WebAssembly code:", err)
+		return
 	}
 
-	module, err := wasmtime.NewModule(store.Engine, wasmBytes)
+	engine := wasmtime.NewEngine()
+	
+	module, err := wasmtime.NewModule(engine, wasmBytes)
 	if err != nil {
-		fmt.Println("Failed to compile module:", err)
+		fmt.Println("failed to compile module ",err)
 	}
 
-	// Create an empty import object.
-	importObject := wasmer.NewImportObject()
-
-	// Let's instantiate the WebAssembly module.
-	instance, err := wasmer.NewInstance(module, importObject)
-
+	linker := wasmtime.NewLinker(engine)
+	err = linker.DefineWasi()
 	if err != nil {
-		panic(fmt.Sprintln("Failed to instantiate the module:", err))
+		fmt.Println("failed to define wasi ",err)
 	}
 
-	// // Now let's execute the `sum` function.
-	// sum, err := instance.Exports.GetFunction("sum")
+	wasiConfig := wasmtime.NewWasiConfig()
 
-	// if err != nil {
-	// 	panic(fmt.Sprintln("Failed to get the `add_one` function:", err))
-	// }
+	store := wasmtime.NewStore(engine)
+	store.SetWasi(wasiConfig)
 
-	// result, err := sum(1, 2)
+	instance,err := linker.Instantiate(store, module)
+	if err != nil {
+		fmt.Println("failed to instantiate ",err)
+	}
 
-	// if err != nil {
-	// 	panic(fmt.Sprintln("Failed to call the `add_one` function:", err))
-	// }
-
-	// fmt.Println("Results of `sum`:", result)
+	sumFunc := instance.GetFunc(store,"sum")
+	if sumFunc != nil {
+		result ,err := sumFunc.Call(store,1,2)
+		if err != nil {
+			fmt.Println("failed to call sum ",err)
+		}
+		fmt.Println("Results of `sum`:", result)
+	}
 }
