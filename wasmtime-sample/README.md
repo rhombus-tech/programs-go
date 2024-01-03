@@ -4,14 +4,14 @@ This sample shows how to run WebAssembly inside EGo using [Wasmtime](https://pkg
 
 By default, *wasmtime-go* comes with a shared library. EGo only supports static linking. To this end, download the wasmtime static library and tell the Go compiler to use it:
 ```sh
-wget -O- https://github.com/wasmerio/wasmer/releases/download/2.2.1/wasmer-linux-amd64.tar.gz | tar xz --one-top-level=wasmer
-CGO_CFLAGS="-I$PWD/wasmer/include" CGO_LDFLAGS="$PWD/wasmer/lib/libwasmer.a -ldl -lm -static-libgcc" ego-go build -tags custom_wasmtime_runtime
+wget -O- https://github.com/bytecodealliance/wasmtime/releases/download/v15.0.1/wasmtime-v12.0.0-x86_64-linux-c-api.tar.xz  | tar xf --one-top-level=wasmer
+CGO_CFLAGS="-I$PWD/wasmtime/include" CGO_LDFLAGS="$PWD/wasmtime/lib/libwasmtime.a -ldl -lm -static-libgcc" ego-go build -tags custom_wasmtime_runtime
 ```
 
 Then you can sign and run as usual:
 ```sh
-ego sign wastime_sample
-ego run wastime_sample
+ego sign wasmtime_sample
+ego run wasmtime_sample
 ```
 
 You should see an output similar to:
