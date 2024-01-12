@@ -1,4 +1,4 @@
-# Wasmer sample
+# Wasmtime sample
 
 This sample shows how to run WebAssembly inside EGo using [Wasmtime](https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go).
 
