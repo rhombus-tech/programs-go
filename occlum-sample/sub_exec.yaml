@@ -8,4 +8,4 @@ targets:
   - target: /root
     copy:
       - files:
-        - ../helloworld
+        - ../main
